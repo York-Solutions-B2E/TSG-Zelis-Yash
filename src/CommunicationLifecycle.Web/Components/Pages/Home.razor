@@ -1,0 +1,94 @@
+﻿@page "/"
+
+<PageTitle>Home - Communication Lifecycle</PageTitle>
+
+<div class="container-fluid mt-4">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="text-center">
+                <i class="bi bi-envelope-paper display-1 text-primary mb-3"></i>
+                <h1 class="display-4 fw-bold text-primary">Communication Experience Lifecycle</h1>
+                <p class="lead text-muted">
+                    Track the status of documents such as EOBs, EOPs, and ID cards—from creation all the way to delivery.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                    <i class="bi bi-collection display-4 text-primary mb-3"></i>
+                    <h5 class="card-title">View Communications</h5>
+                    <p class="card-text">Browse and filter through all communications with pagination and status tracking.</p>
+                    <a href="/communications" class="btn btn-primary">
+                        <i class="bi bi-arrow-right"></i> View Communications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-lightning-charge display-4 text-warning mb-3"></i>
+                    <h5 class="card-title">Event Simulator</h5>
+                    <p class="card-text">Simulate status change events and publish them to RabbitMQ for real-time updates.</p>
+                    <a href="/event-simulator" class="btn btn-warning">
+                        <i class="bi bi-play-circle"></i> Simulate Events
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Taxonomy -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Reference Status Taxonomy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-primary">Creation Phase</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-primary me-2">ReadyForRelease</span></li>
+                                <li><span class="badge bg-primary me-2">Released</span></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-info">Production Phase</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-info text-dark me-2">QueuedForPrinting</span></li>
+                                <li><span class="badge bg-info text-dark me-2">Printed</span></li>
+                                <li><span class="badge bg-info text-dark me-2">Inserted</span></li>
+                                <li><span class="badge bg-warning text-dark me-2">WarehouseReady</span></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-success">Logistics Phase</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-warning text-dark me-2">Shipped</span></li>
+                                <li><span class="badge bg-warning text-dark me-2">InTransit</span></li>
+                                <li><span class="badge bg-success me-2">Delivered</span></li>
+                                <li><span class="badge bg-secondary me-2">Returned</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            Each communication type (EOB, EOP, ID Card) maps to a subset of these global statuses
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

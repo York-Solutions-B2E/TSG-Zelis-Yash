@@ -1,0 +1,459 @@
+@page "/communications/{id:int}"
+@using CommunicationLifecycle.Core.Entities
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<CommunicationDetails> Logger
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Communication Details - Communication Lifecycle</PageTitle>
+
+<div class="container-fluid mt-4">
+    @if (loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading communication details...</p>
+        </div>
+    }
+    else if (communication != null)
+    {
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-outline-secondary me-3" @onclick="GoBack">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </button>
+                        <h1 class="h3 d-inline-block mb-0">@communication.Title</h1>
+                    </div>
+                    <div>
+                        <span class="badge @GetStatusBadgeClass(communication.CurrentStatus) fs-6 me-2">
+                            @communication.CurrentStatus
+                        </span>
+                        <button class="btn btn-warning" @onclick="NavigateToEventSimulator">
+                            <i class="bi bi-lightning"></i> Simulate Event
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Header Info -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Communication Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">ID:</dt>
+                                    <dd class="col-sm-8">@communication.Id</dd>
+                                    
+                                    <dt class="col-sm-4">Title:</dt>
+                                    <dd class="col-sm-8">@communication.Title</dd>
+                                    
+                                    <dt class="col-sm-4">Type:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge bg-info text-dark">@GetTypeDisplayName(communication.TypeCode)</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Current Status:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge @GetStatusBadgeClass(communication.CurrentStatus)">
+                                            @communication.CurrentStatus
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Created:</dt>
+                                    <dd class="col-sm-8">
+                                        @communication.CreatedUtc.ToString("MMM dd, yyyy HH:mm") UTC
+                                        <br />
+                                        <small class="text-muted">@GetRelativeTime(communication.CreatedUtc)</small>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Last Updated:</dt>
+                                    <dd class="col-sm-8">
+                                        @communication.LastUpdatedUtc.ToString("MMM dd, yyyy HH:mm") UTC
+                                        <br />
+                                        <small class="text-muted">@GetRelativeTime(communication.LastUpdatedUtc)</small>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Source File:</dt>
+                                    <dd class="col-sm-8">
+                                        @if (!string.IsNullOrEmpty(communication.SourceFileUrl))
+                                        {
+                                            <a href="@communication.SourceFileUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-file-earmark"></i> View File
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No source file</span>
+                                        }
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(communication.Description))
+                        {
+                            <hr />
+                            <div>
+                                <strong>Description:</strong>
+                                <p class="mb-0 mt-2">@communication.Description</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Status History Stats</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h4 class="text-primary mb-0">@communication.StatusHistory.Count</h4>
+                                    <small class="text-muted">Status Changes</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-success mb-0">@((DateTime.UtcNow - communication.CreatedUtc).Days)</h4>
+                                    <small class="text-muted">Days Active</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (communication.StatusHistory.Any())
+                        {
+                            <hr />
+                            <div>
+                                <strong>Latest Status Change:</strong>
+                                <p class="mb-0 mt-1">
+                                    <span class="badge @GetStatusBadgeClass(communication.StatusHistory.First().StatusCode)">
+                                        @communication.StatusHistory.First().StatusCode
+                                    </span>
+                                    <br />
+                                    <small class="text-muted">
+                                        @communication.StatusHistory.First().OccurredUtc.ToString("MMM dd, yyyy HH:mm")
+                                    </small>
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status History Timeline -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Status History Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (communication.StatusHistory.Any())
+                        {
+                            <div class="timeline">
+                                @foreach (var (historyItem, index) in communication.StatusHistory.Select((item, index) => (item, index)))
+                                {
+                                    <div class="timeline-item @(index == 0 ? "timeline-item-current" : "")">
+                                        <div class="timeline-marker">
+                                            <div class="timeline-marker-dot @GetTimelineMarkerClass(historyItem.StatusCode, index == 0)">
+                                                <i class="bi @GetStatusIcon(historyItem.StatusCode)"></i>
+                                            </div>
+                                        </div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-header">
+                                                <h6 class="mb-1">
+                                                    <span class="badge @GetStatusBadgeClass(historyItem.StatusCode) me-2">
+                                                        @historyItem.StatusCode
+                                                    </span>
+                                                    @if (index == 0)
+                                                    {
+                                                        <span class="badge bg-success">Current</span>
+                                                    }
+                                                </h6>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock"></i>
+                                                    @historyItem.OccurredUtc.ToString("MMM dd, yyyy HH:mm") UTC
+                                                    (@GetRelativeTime(historyItem.OccurredUtc))
+                                                </small>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(historyItem.Notes))
+                                            {
+                                                <div class="timeline-body">
+                                                    <p class="mb-0">@historyItem.Notes</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="bi bi-clock-history display-4 text-muted"></i>
+                                <p class="text-muted mt-2">No status history available</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Not Found -->
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle display-4 text-warning"></i>
+            <h3 class="mt-3">Communication Not Found</h3>
+            <p class="text-muted">The communication with ID @Id could not be found.</p>
+            <button class="btn btn-primary" @onclick="GoBack">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </button>
+        </div>
+    }
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 25px;
+        top: 50px;
+        width: 2px;
+        height: calc(100% + 1rem);
+        background-color: #dee2e6;
+        z-index: 1;
+    }
+
+    .timeline-item-current:not(:last-child)::before {
+        background-color: #0d6efd;
+    }
+
+    .timeline-marker {
+        flex-shrink: 0;
+        width: 50px;
+        height: 50px;
+        margin-right: 1rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .timeline-marker-dot {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+        border: 3px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .timeline-marker-current {
+        background-color: #0d6efd !important;
+        animation: pulse 2s infinite;
+    }
+
+    .timeline-marker-success {
+        background-color: #198754;
+    }
+
+    .timeline-marker-warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+
+    .timeline-marker-danger {
+        background-color: #dc3545;
+    }
+
+    .timeline-marker-secondary {
+        background-color: #6c757d;
+    }
+
+    .timeline-marker-info {
+        background-color: #0dcaf0;
+        color: #212529;
+    }
+
+    .timeline-content {
+        flex-grow: 1;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border-left: 3px solid #dee2e6;
+    }
+
+    .timeline-item-current .timeline-content {
+        border-left-color: #0d6efd;
+        background-color: #f0f8ff;
+    }
+
+    .timeline-header h6 {
+        color: #495057;
+    }
+
+    .timeline-body {
+        margin-top: 0.5rem;
+    }
+
+    @@keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Communication? communication;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCommunication();
+    }
+
+    private async Task LoadCommunication()
+    {
+        loading = true;
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            communication = await httpClient.GetFromJsonAsync<Communication>($"communications/{Id}/with-history");
+        }
+        catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+        {
+            communication = null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading communication {CommunicationId}", Id);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/communications");
+    }
+
+    private string GetTypeDisplayName(string typeCode)
+    {
+        return typeCode switch
+        {
+            "EOB" => "Explanation of Benefits",
+            "EOP" => "Explanation of Payment",
+            "ID_CARD" => "Member ID Card",
+            "WELCOME_PACKET" => "Welcome Packet",
+            "CLAIM_STATEMENT" => "Claim Statement",
+            "PROVIDER_STATEMENT" => "Provider Statement",
+            _ => typeCode
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "ReadyForRelease" or "Released" => "bg-primary",
+            "QueuedForPrinting" or "Printed" or "Inserted" => "bg-info text-dark",
+            "WarehouseReady" or "Shipped" or "InTransit" => "bg-warning text-dark",
+            "Delivered" => "bg-success",
+            "Failed" or "Cancelled" => "bg-danger",
+            "Returned" => "bg-secondary",
+            "Expired" or "Archived" => "bg-dark",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private string GetTimelineMarkerClass(string status, bool isCurrent)
+    {
+        if (isCurrent) return "timeline-marker-current";
+        
+        return status switch
+        {
+            "Delivered" => "timeline-marker-success",
+            "Failed" or "Cancelled" => "timeline-marker-danger",
+            "Returned" => "timeline-marker-secondary",
+            "WarehouseReady" or "Shipped" or "InTransit" => "timeline-marker-warning",
+            "QueuedForPrinting" or "Printed" or "Inserted" => "timeline-marker-info",
+            _ => "timeline-marker-secondary"
+        };
+    }
+
+    private string GetStatusIcon(string status)
+    {
+        return status switch
+        {
+            "ReadyForRelease" => "bi-check-circle",
+            "Released" => "bi-send",
+            "QueuedForPrinting" => "bi-hourglass-split",
+            "Printed" => "bi-printer",
+            "Inserted" => "bi-inbox",
+            "WarehouseReady" => "bi-building",
+            "Shipped" => "bi-truck",
+            "InTransit" => "bi-arrow-right-circle",
+            "Delivered" => "bi-check2-circle",
+            "Returned" => "bi-arrow-return-left",
+            "Failed" => "bi-x-circle",
+            "Cancelled" => "bi-dash-circle",
+            "Expired" => "bi-clock",
+            "Archived" => "bi-archive",
+            _ => "bi-circle"
+        };
+    }
+
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var diff = DateTime.UtcNow - dateTime;
+        return diff.TotalDays >= 1 ? $"{(int)diff.TotalDays} days ago" :
+               diff.TotalHours >= 1 ? $"{(int)diff.TotalHours} hours ago" :
+               $"{(int)diff.TotalMinutes} minutes ago";
+    }
+
+    private void NavigateToEventSimulator()
+    {
+        Navigation.NavigateTo($"/event-simulator?communicationId={Id}");
+    }
+} 

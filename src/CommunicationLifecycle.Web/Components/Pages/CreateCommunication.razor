@@ -1,0 +1,279 @@
+@page "/communications/create"
+@using CommunicationLifecycle.Core.Entities
+@using System.ComponentModel.DataAnnotations
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<CreateCommunication> Logger
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Create Communication - Communication Lifecycle</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Create New Communication</h3>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+
+                    @if (loading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading communication types...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="@createRequest" OnValidSubmit="@HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                                    <InputText id="title" class="form-control" @bind-Value="createRequest.Title" placeholder="Enter communication title" />
+                                    <ValidationMessage For="@(() => createRequest.Title)" class="text-danger" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="typeCode" class="form-label">Communication Type <span class="text-danger">*</span></label>
+                                    <InputSelect id="typeCode" class="form-select" @bind-Value="SelectedTypeCode">
+                                        <option value="">-- Select Type --</option>
+                                        @foreach (var type in communicationTypes)
+                                        {
+                                            <option value="@type.TypeCode">@type.DisplayName</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => createRequest.TypeCode)" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="status" class="form-label">Initial Status <span class="text-danger">*</span></label>
+                                    <InputSelect id="status" class="form-select" @bind-Value="createRequest.CurrentStatus" disabled="@(string.IsNullOrEmpty(SelectedTypeCode))">
+                                        <option value="">-- Select Status --</option>
+                                        @foreach (var status in availableStatuses)
+                                        {
+                                            <option value="@status.Code">@status.Description</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => createRequest.CurrentStatus)" class="text-danger" />
+                                    @if (string.IsNullOrEmpty(SelectedTypeCode))
+                                    {
+                                        <div class="form-text">Please select a communication type first</div>
+                                    }
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <InputTextArea id="description" class="form-control" @bind-Value="createRequest.Description" placeholder="Enter communication description" rows="3" />
+                                    <ValidationMessage For="@(() => createRequest.Description)" class="text-danger" />
+                                </div>
+                            </div>
+
+
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                                <button type="submit" class="btn btn-primary" disabled="@submitting">
+                                    @if (submitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Creating...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-plus-circle me-2"></i>
+                                        <span>Create Communication</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CreateCommunicationRequest createRequest = new();
+    private List<CommunicationType> communicationTypes = new();
+    private List<StatusOption> availableStatuses = new();
+    private bool loading = true;
+    private bool submitting = false;
+    private string errorMessage = string.Empty;
+    
+    private string selectedTypeCode = string.Empty;
+    private string SelectedTypeCode
+    {
+        get => selectedTypeCode;
+        set
+        {
+            if (selectedTypeCode != value)
+            {
+                selectedTypeCode = value;
+                createRequest.TypeCode = value;
+                createRequest.CurrentStatus = string.Empty; // Reset status when type changes
+                
+                // Clear existing statuses immediately and refresh UI
+                availableStatuses.Clear();
+                StateHasChanged();
+                
+                if (!string.IsNullOrEmpty(value))
+                {
+                    _ = InvokeAsync(async () => await LoadAvailableStatusesForType(value));
+                }
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCommunicationTypes();
+        loading = false;
+    }
+
+    private async Task LoadCommunicationTypes()
+    {
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            var types = await httpClient.GetFromJsonAsync<List<CommunicationType>>("communicationtypes?activeOnly=true");
+            communicationTypes = types ?? new List<CommunicationType>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading communication types");
+            errorMessage = "Failed to load communication types. Please refresh the page.";
+        }
+    }
+
+
+
+    private async Task LoadAvailableStatusesForType(string typeCode)
+    {
+        try
+        {
+            Logger.LogInformation("Loading available statuses for type: {TypeCode}", typeCode);
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            var response = await httpClient.GetFromJsonAsync<AvailableStatusesResponse>("communicationtypes/available-statuses");
+            
+            if (response?.Statuses != null)
+            {
+                Logger.LogInformation("Received {Count} statuses from API", response.Statuses.Count);
+                
+                // For new communications, show initial statuses suitable for creation
+                var initialStatuses = new[] { "ReadyForRelease", "QueuedForPrinting", "Released" };
+                availableStatuses = response.Statuses
+                    .Where(s => initialStatuses.Contains(s.Code))
+                    .OrderBy(s => Array.IndexOf(initialStatuses, s.Code))
+                    .ToList();
+                
+                Logger.LogInformation("Filtered to {Count} initial statuses", availableStatuses.Count);
+                
+                // Auto-select ReadyForRelease as the default initial status
+                if (availableStatuses.Any())
+                {
+                    createRequest.CurrentStatus = "ReadyForRelease";
+                    Logger.LogInformation("Auto-selected status: {Status}", createRequest.CurrentStatus);
+                }
+                
+                // Force UI refresh
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading available statuses for type {TypeCode}", typeCode);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (submitting) return;
+
+        submitting = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            var response = await httpClient.PostAsJsonAsync("communications", createRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var createdCommunication = await response.Content.ReadFromJsonAsync<Communication>();
+                if (createdCommunication != null)
+                {
+                    Logger.LogInformation("Communication created successfully with ID {CommunicationId}", createdCommunication.Id);
+                    Navigation.NavigateTo("/communications");
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Failed to create communication: {errorContent}";
+                Logger.LogError("Failed to create communication. Response: {StatusCode} - {Content}", response.StatusCode, errorContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating communication");
+            errorMessage = "An unexpected error occurred while creating the communication.";
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/communications");
+    }
+
+    // DTOs matching the API
+    public class CreateCommunicationRequest
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [StringLength(200, ErrorMessage = "Title cannot exceed 200 characters")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Communication type is required")]
+        public string TypeCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Initial status is required")]
+        public string CurrentStatus { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        public string? Description { get; set; }
+    }
+
+    public class AvailableStatusesResponse
+    {
+        public List<StatusOption> Statuses { get; set; } = new();
+    }
+
+    public class StatusOption
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+}

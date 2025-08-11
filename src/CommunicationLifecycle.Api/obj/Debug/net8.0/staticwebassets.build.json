@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "3Pp3BU5zjJ4OTqylkLNwxSOn/aXoBzKsCoFV23weUXs=",
+  "Source": "CommunicationLifecycle.Api",
+  "BasePath": "_content/CommunicationLifecycle.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

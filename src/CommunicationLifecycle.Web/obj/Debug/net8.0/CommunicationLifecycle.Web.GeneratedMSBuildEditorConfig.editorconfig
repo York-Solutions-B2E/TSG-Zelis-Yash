@@ -1,0 +1,63 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = CommunicationLifecycle.Web
+build_property.RootNamespace = CommunicationLifecycle.Web
+build_property.ProjectDir = /Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web
+build_property._RazorSourceGeneratorDebug = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BcHAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Pages/CommunicationDetails.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Db21tdW5pY2F0aW9uRGV0YWlscy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Pages/Communications.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Db21tdW5pY2F0aW9ucy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Pages/CreateCommunication.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9DcmVhdGVDb21tdW5pY2F0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FcnJvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Pages/EventSimulator.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FdmVudFNpbXVsYXRvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Ib21lLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Sb3V0ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-xzg5bootyp
+
+[/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Web/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTmF2TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-ycc6oqewq9

@@ -1,0 +1,586 @@
+@page "/event-simulator"
+@using CommunicationLifecycle.Core.Entities
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<EventSimulator> Logger
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Event Simulator - Communication Lifecycle</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0"><i class="bi bi-lightning-charge"></i> Event Simulator</h1>
+                    <p class="text-muted mb-0">Simulate status change events for communications</p>
+                </div>
+                <button class="btn btn-outline-secondary" @onclick="NavigateBackToCommunications">
+                    <i class="bi bi-arrow-left"></i> Back to Communications
+                </button>
+            </div>
+
+            <!-- Pre-selected Communication (from URL parameter) -->
+            @if (!string.IsNullOrEmpty(preSelectedCommunicationId))
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Communication ID @preSelectedCommunicationId is pre-selected. You can change it using the dropdown below.
+                </div>
+            }
+
+            <!-- Event Simulation Form -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-play-circle"></i> Simulate Event</h5>
+                        </div>
+                        <div class="card-body">
+                            @if (loading)
+                            {
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading communications...</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="row g-3">
+                                    <!-- Communication Selection -->
+                                    <div class="col-md-6">
+                                        <label class="form-label"><strong>1. Select Communication</strong></label>
+                                        <select class="form-select @(selectedCommunicationId <= 0 ? "is-invalid" : "")" 
+                                                @bind="selectedCommunicationId" @bind:after="OnCommunicationChanged">
+                                            <option value="0">-- Select a Communication --</option>
+                                            @foreach (var comm in communications)
+                                            {
+                                                <option value="@comm.Id">
+                                                    @comm.Title (@comm.TypeCode - @comm.CurrentStatus)
+                                                </option>
+                                            }
+                                        </select>
+                                        @if (selectedCommunicationId <= 0)
+                                        {
+                                            <div class="invalid-feedback">Please select a communication.</div>
+                                        }
+                                    </div>
+
+                                    <!-- Event Type Selection -->
+                                    <div class="col-md-6">
+                                        <label class="form-label"><strong>2. Select Event Type</strong></label>
+                                        <select class="form-select @(string.IsNullOrEmpty(selectedEventType) ? "is-invalid" : "")" 
+                                                @bind="selectedEventType" @bind:after="OnEventTypeChanged"
+                                                disabled="@(availableEvents.Count == 0)">
+                                            <option value="">-- Select an Event --</option>
+                                            @foreach (var eventOption in availableEvents)
+                                            {
+                                                <option value="@eventOption.EventType" data-status="@eventOption.NewStatus">
+                                                    @eventOption.EventType (→ @eventOption.NewStatus)
+                                                </option>
+                                            }
+                                        </select>
+                                        @if (selectedCommunicationId > 0 && availableEvents.Count == 0)
+                                        {
+                                            <div class="text-warning mt-1">
+                                                <small><i class="bi bi-exclamation-triangle"></i> No status changes available for this communication.</small>
+                                            </div>
+                                        }
+                                        @if (string.IsNullOrEmpty(selectedEventType) && availableEvents.Count > 0)
+                                        {
+                                            <div class="invalid-feedback">Please select an event type.</div>
+                                        }
+                                    </div>
+
+                                    <!-- Notes -->
+                                    <div class="col-12">
+                                        <label class="form-label"><strong>3. Notes (Optional)</strong></label>
+                                        <textarea class="form-control" rows="3" @bind="eventNotes" 
+                                                  placeholder="Enter any notes about this event simulation..."></textarea>
+                                    </div>
+
+                                    <!-- Action Button -->
+                                    <div class="col-12">
+                                        <hr />
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                @if (!string.IsNullOrEmpty(selectedEventType) && !string.IsNullOrEmpty(newStatus))
+                                                {
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="text-muted me-2">Status will change to:</span>
+                                                        <span class="badge @GetStatusBadgeClass(newStatus) fs-6">@newStatus</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                            <button class="btn btn-warning btn-lg" 
+                                                    @onclick="PublishEvent" 
+                                                    disabled="@(selectedCommunicationId <= 0 || string.IsNullOrEmpty(selectedEventType) || publishing)">
+                                                @if (publishing)
+                                                {
+                                                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                                                        <span class="visually-hidden">Publishing...</span>
+                                                    </div>
+                                                    <span>Publishing...</span>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-lightning"></i>
+                                                    <span>Publish Event</span>
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Communication Info -->
+                <div class="col-lg-4">
+                    @if (selectedCommunication != null)
+                    {
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Selected Communication</h6>
+                            </div>
+                            <div class="card-body">
+                                <dl class="mb-0">
+                                    <dt>Title:</dt>
+                                    <dd>@selectedCommunication.Title</dd>
+                                    
+                                    <dt>Type:</dt>
+                                    <dd><span class="badge bg-info text-dark">@GetTypeDisplayName(selectedCommunication.TypeCode)</span></dd>
+                                    
+                                    <dt>Current Status:</dt>
+                                    <dd><span class="badge @GetStatusBadgeClass(selectedCommunication.CurrentStatus)">@selectedCommunication.CurrentStatus</span></dd>
+                                    
+                                    <dt>Last Updated:</dt>
+                                    <dd>
+                                        @selectedCommunication.LastUpdatedUtc.ToString("MMM dd, HH:mm")
+                                        <br />
+                                        <small class="text-muted">@GetRelativeTime(selectedCommunication.LastUpdatedUtc)</small>
+                                    </dd>
+                                </dl>
+                                
+                                <hr />
+                                <div class="d-grid">
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="ViewCommunicationDetails">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Quick Event Types -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-collection"></i> Common Event Types</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                @foreach (var eventType in commonEventTypes)
+                                {
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" 
+                                                @onclick="() => SetEventType(eventType)"
+                                                disabled="@(selectedCommunicationId <= 0)">
+                                            @eventType
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="bi bi-info-circle"></i> Quick access to common event types
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Events History -->
+            @if (recentEvents.Any())
+            {
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Simulations</h5>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearEventHistory">
+                                    <i class="bi bi-trash"></i> Clear
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Communication</th>
+                                                <th>Event Type</th>
+                                                <th>Status Change</th>
+                                                <th>Result</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var evt in recentEvents.Take(10))
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        @evt.Timestamp.ToString("HH:mm:ss")
+                                                        <br />
+                                                        <small class="text-muted">@evt.Timestamp.ToString("MMM dd")</small>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@evt.CommunicationTitle</strong>
+                                                        <br />
+                                                        <small class="text-muted">ID: @evt.CommunicationId</small>
+                                                    </td>
+                                                    <td>
+                                                        <code>@evt.EventType</code>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-secondary me-1">@evt.OldStatus</span>
+                                                        <i class="bi bi-arrow-right"></i>
+                                                        <span class="badge @GetStatusBadgeClass(evt.NewStatus) ms-1">@evt.NewStatus</span>
+                                                    </td>
+                                                    <td>
+                                                        @if (evt.Success)
+                                                        {
+                                                            <span class="badge bg-success">Success</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-danger">Failed</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] [SupplyParameterFromQuery] public string? CommunicationId { get; set; }
+
+    private string preSelectedCommunicationId = "";
+    private List<CommunicationSummary> communications = new();
+    private List<EventOption> availableEvents = new();
+    private List<string> commonEventTypes = new();
+    private List<RecentEventItem> recentEvents = new();
+    
+    private int selectedCommunicationId = 0;
+    private string selectedEventType = "";
+    private string newStatus = "";
+    private string eventNotes = "";
+    private bool loading = true;
+    private bool publishing = false;
+
+    private CommunicationSummary? selectedCommunication => 
+        communications.FirstOrDefault(c => c.Id == selectedCommunicationId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        preSelectedCommunicationId = CommunicationId ?? "";
+        
+        await LoadCommunications();
+        await LoadCommonEventTypes();
+
+        // Pre-select communication if provided in URL
+        if (int.TryParse(preSelectedCommunicationId, out int preSelectedId))
+        {
+            selectedCommunicationId = preSelectedId;
+            await OnCommunicationChanged();
+        }
+    }
+
+    private async Task LoadCommunications()
+    {
+        loading = true;
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            var response = await httpClient.GetFromJsonAsync<List<CommunicationSummary>>("eventsimulator/communications");
+            communications = response ?? new List<CommunicationSummary>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading communications for simulation");
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task LoadCommonEventTypes()
+    {
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            var response = await httpClient.GetFromJsonAsync<List<string>>("eventsimulator/event-types");
+            commonEventTypes = response ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading common event types");
+        }
+    }
+
+    private async Task OnCommunicationChanged()
+    {
+        selectedEventType = "";
+        newStatus = "";
+        availableEvents.Clear();
+
+        if (selectedCommunicationId > 0)
+        {
+            try
+            {
+                var httpClient = HttpClientFactory.CreateClient("ApiClient");
+                var response = await httpClient.GetFromJsonAsync<AvailableEventsResponse>($"eventsimulator/communications/{selectedCommunicationId}/available-events");
+                if (response != null)
+                {
+                    availableEvents = response.AvailableEvents;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error loading available events for communication {CommunicationId}", selectedCommunicationId);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnEventTypeChanged()
+    {
+        var selectedEvent = availableEvents.FirstOrDefault(e => e.EventType == selectedEventType);
+        newStatus = selectedEvent?.NewStatus ?? "";
+        StateHasChanged();
+    }
+
+    private void SetEventType(string eventType)
+    {
+        var matchingEvent = availableEvents.FirstOrDefault(e => e.EventType == eventType);
+        if (matchingEvent != null)
+        {
+            selectedEventType = eventType;
+            newStatus = matchingEvent.NewStatus;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PublishEvent()
+    {
+        if (selectedCommunicationId <= 0 || string.IsNullOrEmpty(selectedEventType) || selectedCommunication == null)
+            return;
+
+        publishing = true;
+        try
+        {
+            var request = new SimulateEventRequest
+            {
+                CommunicationId = selectedCommunicationId,
+                EventType = selectedEventType,
+                NewStatus = newStatus,
+                Notes = string.IsNullOrWhiteSpace(eventNotes) ? null : eventNotes
+            };
+
+            var httpClient = HttpClientFactory.CreateClient("ApiClient");
+            var response = await httpClient.PostAsJsonAsync("eventsimulator/publish-event", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<SimulateEventResponse>();
+                if (result != null)
+                {
+                    // Add to recent events
+                    recentEvents.Insert(0, new RecentEventItem
+                    {
+                        Timestamp = DateTime.Now,
+                        CommunicationId = selectedCommunicationId,
+                        CommunicationTitle = selectedCommunication.Title,
+                        EventType = selectedEventType,
+                        OldStatus = result.OldStatus,
+                        NewStatus = result.NewStatus,
+                        Success = result.Success
+                    });
+
+                    // Update the communication's status in our local list
+                    selectedCommunication.CurrentStatus = result.NewStatus;
+                    selectedCommunication.LastUpdatedUtc = result.TimestampUtc;
+
+                    // Clear form
+                    selectedEventType = "";
+                    newStatus = "";
+                    eventNotes = "";
+
+                    // Reload available events for the updated communication
+                    await OnCommunicationChanged();
+
+                    // Show success message (in a real app, you might use a toast notification)
+                    Logger.LogInformation("Event published successfully: {EventType} for Communication {CommunicationId}", selectedEventType, selectedCommunicationId);
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Logger.LogError("Failed to publish event: {Error}", errorContent);
+                
+                // Add failed event to history
+                recentEvents.Insert(0, new RecentEventItem
+                {
+                    Timestamp = DateTime.Now,
+                    CommunicationId = selectedCommunicationId,
+                    CommunicationTitle = selectedCommunication.Title,
+                    EventType = selectedEventType,
+                    OldStatus = selectedCommunication.CurrentStatus,
+                    NewStatus = newStatus,
+                    Success = false
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error publishing event");
+            
+            // Add failed event to history
+            if (selectedCommunication != null)
+            {
+                recentEvents.Insert(0, new RecentEventItem
+                {
+                    Timestamp = DateTime.Now,
+                    CommunicationId = selectedCommunicationId,
+                    CommunicationTitle = selectedCommunication.Title,
+                    EventType = selectedEventType,
+                    OldStatus = selectedCommunication.CurrentStatus,
+                    NewStatus = newStatus,
+                    Success = false
+                });
+            }
+        }
+        finally
+        {
+            publishing = false;
+        }
+    }
+
+    private void ClearEventHistory()
+    {
+        recentEvents.Clear();
+    }
+
+    private string GetTypeDisplayName(string typeCode)
+    {
+        return typeCode switch
+        {
+            "EOB" => "Explanation of Benefits",
+            "EOP" => "Explanation of Payment",
+            "ID_CARD" => "Member ID Card",
+            "WELCOME_PACKET" => "Welcome Packet",
+            "CLAIM_STATEMENT" => "Claim Statement",
+            "PROVIDER_STATEMENT" => "Provider Statement",
+            _ => typeCode
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "ReadyForRelease" or "Released" => "bg-primary",
+            "QueuedForPrinting" or "Printed" or "Inserted" => "bg-info text-dark",
+            "WarehouseReady" or "Shipped" or "InTransit" => "bg-warning text-dark",
+            "Delivered" => "bg-success",
+            "Failed" or "Cancelled" => "bg-danger",
+            "Returned" => "bg-secondary",
+            "Expired" or "Archived" => "bg-dark",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var diff = DateTime.UtcNow - dateTime;
+        return diff.TotalDays >= 1 ? $"{(int)diff.TotalDays} days ago" :
+               diff.TotalHours >= 1 ? $"{(int)diff.TotalHours} hours ago" :
+               $"{(int)diff.TotalMinutes} minutes ago";
+    }
+
+    private void NavigateBackToCommunications()
+    {
+        Navigation.NavigateTo("/communications");
+    }
+
+    private void ViewCommunicationDetails()
+    {
+        if (selectedCommunication != null)
+        {
+            Navigation.NavigateTo($"/communications/{selectedCommunication.Id}");
+        }
+    }
+
+    // DTOs
+    public class CommunicationSummary
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string TypeCode { get; set; } = string.Empty;
+        public string CurrentStatus { get; set; } = string.Empty;
+        public DateTime LastUpdatedUtc { get; set; }
+    }
+
+    public class AvailableEventsResponse
+    {
+        public int CommunicationId { get; set; }
+        public string CurrentStatus { get; set; } = string.Empty;
+        public List<EventOption> AvailableEvents { get; set; } = new();
+    }
+
+    public class EventOption
+    {
+        public string EventType { get; set; } = string.Empty;
+        public string NewStatus { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    public class SimulateEventRequest
+    {
+        public int CommunicationId { get; set; }
+        public string EventType { get; set; } = string.Empty;
+        public string NewStatus { get; set; } = string.Empty;
+        public string? Notes { get; set; }
+    }
+
+    public class SimulateEventResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string OldStatus { get; set; } = string.Empty;
+        public string NewStatus { get; set; } = string.Empty;
+        public DateTime TimestampUtc { get; set; }
+    }
+
+    public class RecentEventItem
+    {
+        public DateTime Timestamp { get; set; }
+        public int CommunicationId { get; set; }
+        public string CommunicationTitle { get; set; } = string.Empty;
+        public string EventType { get; set; } = string.Empty;
+        public string OldStatus { get; set; } = string.Empty;
+        public string NewStatus { get; set; } = string.Empty;
+        public bool Success { get; set; }
+    }
+} 

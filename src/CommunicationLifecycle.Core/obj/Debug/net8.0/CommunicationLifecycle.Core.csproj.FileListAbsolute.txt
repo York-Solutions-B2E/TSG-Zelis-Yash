@@ -1,0 +1,12 @@
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/bin/Debug/net8.0/CommunicationLifecycle.Core.deps.json
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/bin/Debug/net8.0/CommunicationLifecycle.Core.dll
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/bin/Debug/net8.0/CommunicationLifecycle.Core.pdb
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.GeneratedMSBuildEditorConfig.editorconfig
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.AssemblyInfoInputs.cache
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.AssemblyInfo.cs
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.csproj.CoreCompileInputs.cache
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.sourcelink.json
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.dll
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/refint/CommunicationLifecycle.Core.dll
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/CommunicationLifecycle.Core.pdb
+/Users/yashwanthchandolu/Desktop/Projects/TSG-Zelis-Yash/src/CommunicationLifecycle.Core/obj/Debug/net8.0/ref/CommunicationLifecycle.Core.dll
